@@ -16,7 +16,8 @@ static int parseOpts(int argc, char** argv);
 int main(int argc, char** argv)
 {
     if (parseOpts(argc, argv) == 0) {
-        return 0;
+        App app(ip, port, dir);
+        return app.run();
     }
     return 1;
 }
