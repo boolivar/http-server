@@ -19,13 +19,15 @@ public:
     int run();
 
 private:
-    std::string _ip;
-    int _port;
+    asio::io_service _io;
+    asio::ip::tcp::acceptor _acceptor;
     std::string _dir;
     boost::regex _regex;
 
+    void startAccept();
     void handleAccept(std::shared_ptr<asio::ip::tcp::socket> socket, const boost::system::error_code& e);
     void handleRead(std::shared_ptr<asio::ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf, const boost::system::error_code& e, std::size_t bytes);
+    void handleWrite(std::shared_ptr<asio::ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf, const boost::system::error_code& e, std::size_t bytes);
 };
 
 #endif // APP_H
