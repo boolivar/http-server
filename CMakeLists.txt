@@ -6,6 +6,8 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 set_property(TARGET final PROPERTY CXX_STANDARD 11)
 set_property(TARGET final PROPERTY CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS "-march=i686")
+
 set(Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS system regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})

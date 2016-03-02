@@ -6,11 +6,12 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/regex.hpp>
 
 using namespace boost::asio;
 
 App::App(const std::string& ip, int port, const std::string& dir) :
-    _ip(ip), _port(port), _dir(dir)
+    _ip(ip), _port(port), _dir(dir), _regex("\\n\\r??\\n")
 {
     std::cout << "ip:" << _ip << std::endl;
     std::cout << "port:" << _port << std::endl;
@@ -37,7 +38,7 @@ int App::run()
 void App::handleAccept(std::shared_ptr<ip::tcp::socket> socket, const boost::system::error_code& e) {
     if (!e) {
         std::shared_ptr<streambuf> buf(new streambuf);
-        async_read_until(*socket, *buf, '\n', boost::bind(&App::handleRead, this, socket, buf,
+        async_read_until(*socket, *buf, _regex, boost::bind(&App::handleRead, this, socket, buf,
             boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred()));
         std::cout << "accept" << std::endl;
     } else {
