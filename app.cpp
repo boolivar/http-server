@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 
+#include <omp.h>
+
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/regex.hpp>
@@ -27,7 +29,13 @@ App::~App()
 int App::run()
 {
     startAccept();
-    _io.run();
+
+#pragma omp parallel
+{
+    for (;;) {
+        _io.run();
+    }
+}
 
     return 0;
 }
@@ -38,12 +46,12 @@ void App::startAccept() {
 }
 
 void App::handleAccept(std::shared_ptr<ip::tcp::socket> socket, const boost::system::error_code& e) {
-    //startAccept();
+    startAccept();
     if (!e) {
         std::shared_ptr<streambuf> buf(new streambuf);
         async_read_until(*socket, *buf, _regex, boost::bind(&App::handleRead, this, socket, buf,
             boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-        std::cout << "accept" << std::endl;
+        std::cout << "#" << omp_get_thread_num() << " accept" << std::endl;
     } else {
         std::cout << "accept error: " << e << std::endl;
     }
@@ -57,7 +65,7 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
         std::istream_iterator<char> eos;
         std::string s(std::istream_iterator<char>(in), eos);
 
-        std::cout << "read " << bytes << ":" << s << std::endl;
+        std::cout << "#" << omp_get_thread_num() << " read " << bytes << ":" << s << std::endl;
 
         buf->consume(bytes);
 
@@ -95,7 +103,7 @@ std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
 void App::handleWrite(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf,
                      const boost::system::error_code& e, std::size_t bytes) {
     if (!e) {
-        std::cout << "write " << bytes << std::endl;
+        std::cout << "#" << omp_get_thread_num() << " write " << bytes << std::endl;
     } else {
         std::cout << "write error: " << e << std::endl;
     }
