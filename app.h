@@ -2,6 +2,8 @@
 #define APP_H
 
 #include <string>
+#include <memory>
+#include <iostream>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -28,6 +30,7 @@ private:
     void handleAccept(std::shared_ptr<asio::ip::tcp::socket> socket, const boost::system::error_code& e);
     void handleRead(std::shared_ptr<asio::ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf, const boost::system::error_code& e, std::size_t bytes);
     void handleWrite(std::shared_ptr<asio::ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf, const boost::system::error_code& e, std::size_t bytes);
+    std::shared_ptr<std::istream> getResponse(const std::string& request);
 };
 
 #endif // APP_H

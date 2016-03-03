@@ -1,12 +1,13 @@
 #include "app.h"
 
-#include <iostream>
-#include <memory>
+#include <fstream>
 #include <functional>
+#include <memory>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace boost::asio;
 
@@ -52,13 +53,19 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
                      const boost::system::error_code& e, std::size_t bytes) {
     if (!e) {
         std::istream in(buf.get());
-        std::string s;
-        in >> s;
+
+        std::istream_iterator<char> eos;
+        std::string s(std::istream_iterator<char>(in), eos);
+
         std::cout << "read " << bytes << ":" << s << std::endl;
+
         buf->consume(bytes);
 
         std::ostream out(buf.get());
-        out << "Hello" << std::endl;
+        std::shared_ptr<std::istream> data = getResponse(s);
+
+        out << data->rdbuf();
+
         async_write(*socket, *buf, boost::bind(App::handleWrite, this, socket, buf,
                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
     } else {
@@ -66,7 +73,26 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
     }
 }
 
-void App::handleWrite(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<streambuf> buf,
+std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
+
+    boost::match_results<std::string::const_iterator> what;
+    boost::regex r("^GET(.*)(?:\\?.*)?HTTP");
+    if (boost::regex_search(request, what, r)) {
+        std::string url = what[1];
+        boost::algorithm::trim(url);
+        std::cout << "parse: " << url << std::endl;
+        std::shared_ptr<std::ifstream> file(new std::ifstream(_dir + url, std::ifstream::in));
+        if (file->good()) {
+            std::cout << "found file" << std::endl;
+            return file;
+        }
+    }
+
+    std::cout << "file not found" << std::endl;
+    return std::make_shared<std::istringstream>("HTTP/1.0 404 NOT FOUND\r\nContent-Type: text/html\r\n\r\n");
+}
+
+void App::handleWrite(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf,
                      const boost::system::error_code& e, std::size_t bytes) {
     if (!e) {
         std::cout << "write " << bytes << std::endl;
