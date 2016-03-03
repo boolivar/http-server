@@ -10,8 +10,16 @@
 #include <boost/bind.hpp>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
 
 using namespace boost::asio;
+
+static const char* templ = "HTTP/1.0 200 OK\r\n"
+                   "Content-length: %d\r\n"
+                   "Connection: close\r\n"
+                   "Content-Type: text/html\r\n"
+                   "\r\n"
+                   "%s";
 
 App::App(const std::string& ip, int port, const std::string& dir):
     _acceptor(_io, ip::tcp::endpoint(ip::address::from_string(ip), port)),
@@ -89,10 +97,14 @@ std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
         std::string url = what[1];
         boost::algorithm::trim(url);
         std::cout << "parse: " << url << std::endl;
-        std::shared_ptr<std::ifstream> file(new std::ifstream(_dir + url, std::ifstream::in));
-        if (file->good()) {
+
+        std::ifstream file(_dir + url, std::ifstream::in);
+        if (file.good()) {
             std::cout << "found file" << std::endl;
-            return file;
+            std::istream_iterator<char> eos;
+            std::string content(std::istream_iterator<char>(file), eos);
+            std::cout << "file content: " << content << std::endl;
+            return std::make_shared<std::istringstream>(boost::str(boost::format(templ) % content.size() % content));
         }
     }
 
