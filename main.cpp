@@ -5,6 +5,8 @@
 #include <cstring>
 #include <cstdlib>
 
+#include <fcntl.h>
+
 #include <unistd.h>
 
 using namespace std;
@@ -18,8 +20,22 @@ static int parseOpts(int argc, char** argv);
 int main(int argc, char** argv)
 {
     if (parseOpts(argc, argv) == 0) {
+      pid_t pid, sid;
+
+      pid = fork();
+      if (pid == 0) {
+	umask(0);
+	sid = setsid();
+	chdir("/");
+
+	close(0);
+	close(1);
+	close(2);
+
         App app(ip, port, dir);
         return app.run();
+      }
+      return 0;
     }
     return 1;
 }
