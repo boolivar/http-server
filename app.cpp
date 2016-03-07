@@ -92,7 +92,7 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
 std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
 
     boost::match_results<std::string::const_iterator> what;
-    boost::regex r("^GET(.*)(?:\\?.*)?HTTP");
+    boost::regex r("^GET(.*)(?:\\?| |$)");
     if (boost::regex_search(request, what, r)) {
         std::string url = what[1];
         boost::algorithm::trim(url);
