@@ -67,21 +67,24 @@ void App::handleAccept(std::shared_ptr<ip::tcp::socket> socket, const boost::sys
 void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<streambuf> buf,
                      const boost::system::error_code& e, std::size_t bytes) {
     if (!e) {
+        std::string s;
+
         std::istream in(buf.get());
 
-        std::istream_iterator<char> eos;
-        std::string s(std::istream_iterator<char>(in), eos);
+        while (s.length() < bytes) {
+            std::string tmp;
+            in >> tmp;
+            s += tmp + ' ';
+        }
 
-        std::cout << "#" << omp_get_thread_num() << " read " << bytes << ":" << s << std::endl;
-
-        buf->consume(bytes);
+        std::cout << "#" << omp_get_thread_num() << " read " << bytes << ":" << s << s.length() << std::endl;
 
         std::ostream out(buf.get());
         std::shared_ptr<std::istream> data = getResponse(s);
 
         out << data->rdbuf();
 
-	async_write(*socket, *buf, boost::bind(&App::handleWrite, this, socket, buf,
+        async_write(*socket, *buf, boost::bind(&App::handleWrite, this, socket, buf,
                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
     } else {
         std::cout << "read error: " << e << std::endl;
@@ -91,7 +94,7 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
 std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
 
     boost::match_results<std::string::const_iterator> what;
-    boost::regex r("^GET(.*)(?:\\?| |$)");
+    boost::regex r("GET(.+?)(?:\\?| |$)");
     if (boost::regex_search(request, what, r)) {
         std::string url = what[1];
         boost::algorithm::trim(url);
@@ -100,8 +103,12 @@ std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
         std::ifstream file(_dir + url, std::ifstream::in);
         if (file.good()) {
             std::cout << "found file" << std::endl;
-            std::istream_iterator<char> eos;
-            std::string content(std::istream_iterator<char>(file), eos);
+
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+
+            std::string content(buffer.str());
+
             std::cout << "file content: " << content << std::endl;
             return std::make_shared<std::istringstream>(boost::str(boost::format(templ) % content.size() % content));
         }
