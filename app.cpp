@@ -82,7 +82,7 @@ void App::handleRead(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<st
 
         out << data->rdbuf();
 
-        async_write(*socket, *buf, boost::bind(App::handleWrite, this, socket, buf,
+	async_write(*socket, *buf, boost::bind(&App::handleWrite, this, socket, buf,
                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
     } else {
         std::cout << "read error: " << e << std::endl;
