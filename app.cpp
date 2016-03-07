@@ -109,7 +109,7 @@ std::shared_ptr<std::istream> App::getResponse(const std::string& request) {
     }
 
     std::cout << "file not found" << std::endl;
-    return std::make_shared<std::istringstream>("HTTP/1.0 404 NOT FOUND\r\nContent-Type: text/html\r\n\r\n");
+    return std::make_shared<std::istringstream>("HTTP/1.0 404 NOT FOUND\r\nContent-length: 0\r\nContent-Type: text/html\r\n\r\n");
 }
 
 void App::handleWrite(std::shared_ptr<ip::tcp::socket> socket, std::shared_ptr<asio::streambuf> buf,
